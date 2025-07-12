@@ -22,10 +22,11 @@ let admissionsCollection;
 
 async function connectToDatabase() {
   try {
-    await client.connect();
+    // await client.connect();
     const db = client.db("collegeCloudDB");
     collegeCollection = db.collection("colleges");
     admissionsCollection = db.collection("admissions");
+    reviewsCollection = db.collection("reviews");
     console.log("✅ Connected to MongoDB");
   } catch (error) {
     console.error("❌ Database connection error:", error);
@@ -50,9 +51,9 @@ app.get("/", (req, res) => {
 app.get("/colleges", async (req, res) => {
   const search = req.query.search;
 
-  let query = {}
+  let query = {};
   if (search) {
-    query.name = { $regex: search, $options: "i" }
+    query.name = { $regex: search, $options: "i" };
   }
   try {
     const result = await collegeCollection.find(query).toArray();
@@ -75,12 +76,25 @@ app.get("/colleges/:id", async (req, res) => {
 });
 
 app.get("/admissions", async (req, res) => {
+  const email = req.query.email;
+  const filter = { userEmail: email };
   try {
-    const result = await admissionsCollection.find().toArray();
+    const result = await admissionsCollection.find(filter).toArray();
     res.send(result);
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: "Failed to load colleges" });
+  }
+});
+
+app.post("/reviews", async (req, res) => {
+  try {
+    const reviewData = req.body;
+    const result = await reviewsCollection.insertOne(reviewData);
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to submit review" });
   }
 });
 
@@ -94,6 +108,8 @@ app.post("/admissions", upload.single("image"), async (req, res) => {
       address,
       dob,
       collegeId,
+      collegeImage,
+      collegeName,
       userEmail,
     } = req.body;
     const image = req.file?.filename;
@@ -106,6 +122,8 @@ app.post("/admissions", upload.single("image"), async (req, res) => {
       address,
       dob,
       collegeId,
+      collegeImage,
+      collegeName,
       userEmail,
       imageUrl: image ? `/uploads/${image}` : null,
       submittedAt: new Date(),
