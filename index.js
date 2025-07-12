@@ -48,8 +48,14 @@ app.get("/", (req, res) => {
 });
 
 app.get("/colleges", async (req, res) => {
+  const search = req.query.search;
+
+  let query = {}
+  if (search) {
+    query.name = { $regex: search, $options: "i" }
+  }
   try {
-    const result = await collegeCollection.find().toArray();
+    const result = await collegeCollection.find(query).toArray();
     res.send(result);
   } catch (error) {
     console.error(error);
@@ -68,9 +74,28 @@ app.get("/colleges/:id", async (req, res) => {
   }
 });
 
+app.get("/admissions", async (req, res) => {
+  try {
+    const result = await admissionsCollection.find().toArray();
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: "Failed to load colleges" });
+  }
+});
+
 app.post("/admissions", upload.single("image"), async (req, res) => {
   try {
-    const { candidateName, subject, email, phone, address, dob, collegeId } = req.body;
+    const {
+      candidateName,
+      subject,
+      email,
+      phone,
+      address,
+      dob,
+      collegeId,
+      userEmail,
+    } = req.body;
     const image = req.file?.filename;
 
     const newAdmission = {
@@ -81,6 +106,7 @@ app.post("/admissions", upload.single("image"), async (req, res) => {
       address,
       dob,
       collegeId,
+      userEmail,
       imageUrl: image ? `/uploads/${image}` : null,
       submittedAt: new Date(),
     };
