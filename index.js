@@ -22,7 +22,7 @@ let admissionsCollection;
 
 async function connectToDatabase() {
   try {
-    // await client.connect();
+    await client.connect();
     const db = client.db("collegeCloudDB");
     collegeCollection = db.collection("colleges");
     admissionsCollection = db.collection("admissions");
@@ -95,6 +95,16 @@ app.post("/reviews", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: "Failed to submit review" });
+  }
+});
+
+app.get("/reviews", async (req, res) => {
+  try {
+    const result = await reviewsCollection.find().toArray();
+    res.send(result);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "Failed to load colleges" });
   }
 });
 
